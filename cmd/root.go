@@ -4,50 +4,80 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
-	"github.com/fatih/color"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use: "journalismus",
-	// 	Short: "A brief description of your application",
-	// 	Long: `A longer description that spans multiple lines and likely contains
-	// examples and usage of using your application. For example:
+type model struct{}
 
-	// Cobra is a CLI library for Go that empowers applications.
-	// This application is a tool to generate the needed files
-	// to quickly create a Cobra application.`,
+var rootCmd = &cobra.Command{
+	Use: "journal",
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
-	msg := `/////////////////////////////////////////////////////
-//                  Welcome to                     //
-// ▀▀█ █▀█ █ █ █▀▄ █▀█ █▀█ █   ▀█▀ █▀▀ █▄█ █ █ █▀▀ //
-//   █ █ █ █ █ █▀▄ █ █ █▀█ █    █  ▀▀█ █ █ █ █ ▀▀█ //
-// ▀▀  ▀▀▀ ▀▀▀ ▀ ▀ ▀ ▀ ▀ ▀ ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀ ▀▀▀ ▀▀▀ //
-/////////////////////////////////////////////////////`
-
-	color.Cyan(msg)
-
 	if err != nil {
 		os.Exit(1)
 	}
 }
 
+func (m model) Init() tea.Cmd {
+	return nil
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch keypress := msg.String(); keypress {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		}
+		// TODO: onaj event za resize https://youtu.be/Gl31diSVP8M?si=qyI3layE6KGR7A36&t=328
+	}
+
+	return m, nil
+}
+
+var (
+	welcomeMessageStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#72cedd")).
+				Align(lipgloss.Center).
+				BorderStyle(lipgloss.RoundedBorder())
+	docStyle = lipgloss.NewStyle().
+			Padding(1, 2, 1, 2)
+)
+
+func (m model) View() string {
+	doc := strings.Builder{}
+
+	msg := `                 Welcome to                     
+			▀▀█ █▀█ █ █ █▀▄ █▀█ █▀█ █   ▀█▀ █▀▀ █▄█ █ █ █▀▀
+			  █ █ █ █ █ █▀▄ █ █ █▀█ █    █  ▀▀█ █ █ █ █ ▀▀█
+			▀▀  ▀▀▀ ▀▀▀ ▀ ▀ ▀ ▀ ▀ ▀ ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀ ▀▀▀ ▀▀▀
+			          Capture thoughts effortlessly          
+			             in the command line.               `
+	doc.WriteString(welcomeMessageStyle.Render(strings.ReplaceAll(msg, "\t", "")))
+
+	return docStyle.Render(doc.String())
+}
+
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.journalismus.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Run = func(cmd *cobra.Command, args []string) {
+
+		lipgloss.SetHasDarkBackground(termenv.HasDarkBackground())
+
+		m := model{}
+
+		if _, err := tea.NewProgram(m).Run(); err != nil {
+			fmt.Println("Error running program:", err)
+			os.Exit(1)
+		}
+	}
 }
