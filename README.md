@@ -9,3 +9,4 @@
 - config
     - mood rating
     - insert date in the top of entry
+    - templating system

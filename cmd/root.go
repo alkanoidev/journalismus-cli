@@ -38,7 +38,6 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		}
-		// TODO: onaj event za resize https://youtu.be/Gl31diSVP8M?si=qyI3layE6KGR7A36&t=328
 	}
 
 	return m, nil

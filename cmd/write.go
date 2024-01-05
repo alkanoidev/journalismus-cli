@@ -86,7 +86,11 @@ func (m WriteModel) View() string {
 		" ",
 		subtle.Render("(ctrl+s to save)"))
 
+	msg := `▀▀█ █▀█ █ █ █▀▄ █▀█ █▀█ █   ▀█▀ █▀▀ █▄█ █ █ █▀▀
+			  █ █ █ █ █ █▀▄ █ █ █▀█ █    █  ▀▀█ █ █ █ █ ▀▀█
+			▀▀  ▀▀▀ ▀▀▀ ▀ ▀ ▀ ▀ ▀ ▀ ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀ ▀▀▀ ▀▀▀`
 	column := lipgloss.JoinVertical(lipgloss.Left,
+		welcomeMessageStyle.Render(strings.ReplaceAll(msg, "\t", "")),
 		highlight.Render(m.date)+"\n",
 		m.textarea.View(),
 		row)
