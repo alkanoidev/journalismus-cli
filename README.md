@@ -3,6 +3,9 @@
 > Capture thoughts effortlessly in the command line.
 
 ### Roadmap:
-- sqlite database  
-- config  
-    - daily mood
+- store in markdown
+- glamour
+- custom dir
+- config
+    - mood rating
+    - insert date in the top of entry
