@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type model struct{}
+type RootModel struct{}
 
 var rootCmd = &cobra.Command{
 	Use: "journal",
@@ -27,11 +27,11 @@ func Execute() {
 	}
 }
 
-func (m model) Init() tea.Cmd {
+func (m RootModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
@@ -50,10 +50,10 @@ var (
 				Align(lipgloss.Center).
 				BorderStyle(lipgloss.RoundedBorder())
 	docStyle = lipgloss.NewStyle().
-			Padding(1, 2, 1, 2)
+			Padding(1)
 )
 
-func (m model) View() string {
+func (m RootModel) View() string {
 	doc := strings.Builder{}
 
 	msg := `                 Welcome to                     
@@ -73,7 +73,7 @@ func init() {
 
 		lipgloss.SetHasDarkBackground(termenv.HasDarkBackground())
 
-		m := model{}
+		m := RootModel{}
 
 		if _, err := tea.NewProgram(m).Run(); err != nil {
 			fmt.Println("Error running program:", err)
