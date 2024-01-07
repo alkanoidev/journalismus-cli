@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -13,6 +10,8 @@ import (
 	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 )
+
+const primaryColor = lipgloss.Color("#875fff")
 
 type RootModel struct{}
 
@@ -45,9 +44,10 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 var (
 	welcomeMessageStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#72cedd")).
+				Foreground(primaryColor).
 				Align(lipgloss.Center).
-				BorderStyle(lipgloss.RoundedBorder())
+				BorderStyle(lipgloss.BlockBorder()).
+				BorderForeground(primaryColor)
 	docStyle = lipgloss.NewStyle().
 			Padding(1)
 )
@@ -59,8 +59,8 @@ func (m RootModel) View() string {
 			▀▀█ █▀█ █ █ █▀▄ █▀█ █▀█ █   ▀█▀ █▀▀ █▄█ █ █ █▀▀
 			  █ █ █ █ █ █▀▄ █ █ █▀█ █    █  ▀▀█ █ █ █ █ ▀▀█
 			▀▀  ▀▀▀ ▀▀▀ ▀ ▀ ▀ ▀ ▀ ▀ ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀ ▀▀▀ ▀▀▀
-			          Capture thoughts effortlessly          
-			             in the command line.               `
+			           Capture thoughts effortlessly          
+			              in the command line.              `
 	doc.WriteString(welcomeMessageStyle.Render(strings.ReplaceAll(msg, "\t", "")))
 
 	return docStyle.Render(doc.String())

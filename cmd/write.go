@@ -90,7 +90,7 @@ func (m WriteModel) View() string {
 			  █ █ █ █ █ █▀▄ █ █ █▀█ █    █  ▀▀█ █ █ █ █ ▀▀█
 			▀▀  ▀▀▀ ▀▀▀ ▀ ▀ ▀ ▀ ▀ ▀ ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀ ▀▀▀ ▀▀▀`
 	column := lipgloss.JoinVertical(lipgloss.Left,
-		welcomeMessageStyle.Render(strings.ReplaceAll(msg, "\t", "")),
+		strings.ReplaceAll(msg, "\t", ""),
 		highlight.Render(m.date)+"\n",
 		m.textarea.View(),
 		row)

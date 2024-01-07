@@ -4,9 +4,13 @@
 
 ### Roadmap:
 - store in markdown
-- glamour
-- custom dir
+- custom dir input
 - config
     - mood rating
     - insert date in the top of entry
     - templating system
+    - store by month (1 month = 1 md file)
+- view
+  - today cmd
+  - filename cmd
+  - open other file

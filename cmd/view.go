@@ -58,14 +58,13 @@ func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if didSelect, path := m.filepicker.DidSelectFile(msg); didSelect {
 		m.selectedFile = path
-		f, err := os.Open(m.selectedFile)
-		cobra.CheckErr(err)
-		defer f.Close()
-		b1 := make([]byte, 255)
-		_, err = f.Read(b1)
-		cobra.CheckErr(err)
 
-		m.body = string(b1)
+		f, err := os.ReadFile(m.selectedFile)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+			os.Exit(1)
+		}
+		m.body = string(f)
 	}
 
 	if didSelect, path := m.filepicker.DidSelectDisabledFile(msg); didSelect {
@@ -81,22 +80,22 @@ func (m ViewModel) View() string {
 	if m.quitting {
 		return ""
 	}
-	var s strings.Builder
-	s.WriteString("\n  ")
+	s := strings.Builder{}
 	if m.err != nil {
 		s.WriteString(m.filepicker.Styles.DisabledFile.Render(m.err.Error()))
-	} else if m.selectedFile == "" {
-		s.WriteString("Pick a file:")
-	} else {
-		s.WriteString("Selected file: " + m.filepicker.Styles.Selected.Render(m.selectedFile))
 	}
-	s.WriteString("\n\n" + m.filepicker.View() + "\n")
 
 	if len(m.body) > 0 {
-		out, _ := glamour.Render(m.body, "dark")
-		outputStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#3d8a96"))
-		s.WriteString(outputStyle.Render(out))
+		r, _ := glamour.NewTermRenderer(
+			glamour.WithStylesFromJSONFile("glamour_theme.json"),
+		)
+		out, _ := r.Render(m.body)
+		s.WriteString(out)
+	} else {
+		s.WriteString("Pick a entry:")
+		s.WriteString("\n\n" + m.filepicker.View() + "\n")
 	}
+
 	return s.String()
 }
 
@@ -109,11 +108,10 @@ func init() {
 		fp.AllowedTypes = []string{".md"}
 		ex, _ := os.Executable()
 		fp.CurrentDirectory = path.Dir(ex)
-		fp.Styles.Selected.Foreground(lipgloss.Color("#72cedd"))
-		fp.Styles.Cursor.Foreground(lipgloss.Color("#3d8a96"))
-		fp.Styles.Directory.Foreground(lipgloss.Color("#3d8a96"))
 		fp.ShowHidden = false
-		fp.Styles.FileSize.Width(0)
+		fp.Styles.Selected.Foreground(primaryColor)
+		fp.Styles.Cursor.Foreground(primaryColor)
+
 		m := ViewModel{
 			filepicker: fp,
 		}
