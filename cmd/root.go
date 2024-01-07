@@ -71,7 +71,6 @@ func (m RootModel) View() string {
 func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.Run = func(cmd *cobra.Command, args []string) {
-
 		lipgloss.SetHasDarkBackground(termenv.HasDarkBackground())
 
 		m := RootModel{}

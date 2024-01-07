@@ -14,3 +14,6 @@
   - today cmd
   - filename cmd
   - open other file
+- after init show prompt to run view or write
+- root cmd if init shows prompt to run view or write
+- msg when created entry
