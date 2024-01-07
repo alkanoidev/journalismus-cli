@@ -46,8 +46,10 @@ var (
 	welcomeMessageStyle = lipgloss.NewStyle().
 				Foreground(primaryColor).
 				Align(lipgloss.Center).
-				BorderStyle(lipgloss.BlockBorder()).
-				BorderForeground(primaryColor)
+				BorderStyle(lipgloss.DoubleBorder()).
+				BorderForeground(primaryColor).
+				Padding(1).
+				Bold(true)
 	docStyle = lipgloss.NewStyle().
 			Padding(1)
 )

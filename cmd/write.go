@@ -78,19 +78,15 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m WriteModel) View() string {
 	doc := strings.Builder{}
 
-	subtle := lipgloss.NewStyle().Foreground(lipgloss.Color("#3d8a96"))
-	highlight := lipgloss.NewStyle().Foreground(lipgloss.Color("#72cedd"))
+	subtle := lipgloss.NewStyle().Foreground(primaryColor)
+	highlight := lipgloss.NewStyle().Foreground(primaryColor)
 
 	row := lipgloss.JoinHorizontal(lipgloss.Center,
 		subtle.Render("(ctrl+c to quit)"),
 		" ",
 		subtle.Render("(ctrl+s to save)"))
 
-	msg := `▀▀█ █▀█ █ █ █▀▄ █▀█ █▀█ █   ▀█▀ █▀▀ █▄█ █ █ █▀▀
-			  █ █ █ █ █ █▀▄ █ █ █▀█ █    █  ▀▀█ █ █ █ █ ▀▀█
-			▀▀  ▀▀▀ ▀▀▀ ▀ ▀ ▀ ▀ ▀ ▀ ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀ ▀▀▀ ▀▀▀`
 	column := lipgloss.JoinVertical(lipgloss.Left,
-		strings.ReplaceAll(msg, "\t", ""),
 		highlight.Render(m.date)+"\n",
 		m.textarea.View(),
 		row)
