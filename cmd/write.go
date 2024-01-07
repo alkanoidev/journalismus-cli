@@ -59,11 +59,11 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				panic(err)
 			}
-			// default:
-			// 	if !m.textarea.Focused() {
-			// 		cmd = m.textarea.Focus()
-			// 		cmds = append(cmds, cmd)
-			// 	}
+		default:
+			if !m.textarea.Focused() {
+				cmd = m.textarea.Focus()
+				cmds = append(cmds, cmd)
+			}
 		}
 	case error:
 		m.err = msg
