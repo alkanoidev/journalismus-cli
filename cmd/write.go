@@ -18,6 +18,15 @@ type WriteModel struct {
 	body     string
 	err      error
 	date     string
+	msg      string
+}
+
+type ClearSuccessMsg struct{}
+
+func clearSuccessMsgAfter(t time.Duration) tea.Cmd {
+	return tea.Tick(t, func(_ time.Time) tea.Msg {
+		return ClearSuccessMsg{}
+	})
 }
 
 var writeCmd = &cobra.Command{
@@ -59,6 +68,9 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				panic(err)
 			}
+			m.msg = "Entry saved!"
+
+			return m, tea.Batch(cmd, clearSuccessMsgAfter(2*time.Second))
 		default:
 			if !m.textarea.Focused() {
 				cmd = m.textarea.Focus()
@@ -68,6 +80,8 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case error:
 		m.err = msg
 		return m, nil
+	case ClearSuccessMsg:
+		m.msg = ""
 	}
 
 	m.textarea, cmd = m.textarea.Update(msg)
@@ -80,15 +94,22 @@ func (m WriteModel) View() string {
 
 	subtle := lipgloss.NewStyle().Foreground(primaryColor)
 	highlight := lipgloss.NewStyle().Foreground(primaryColor)
+	success := lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")).Padding(1)
 
 	row := lipgloss.JoinHorizontal(lipgloss.Center,
-		subtle.Render("(ctrl+c to quit)"),
+		subtle.Render("(ctrl+s to save)"),
 		" ",
-		subtle.Render("(ctrl+s to save)"))
+		subtle.Render("(ctrl+c to quit)"))
+
+	var successMsg string
+	if len(m.msg) > 0 {
+		successMsg = success.Render(m.msg)
+	}
 
 	column := lipgloss.JoinVertical(lipgloss.Left,
 		highlight.Render(m.date)+"\n",
 		m.textarea.View(),
+		successMsg,
 		row)
 
 	doc.WriteString(column)
