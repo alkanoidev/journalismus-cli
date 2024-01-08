@@ -68,7 +68,7 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				panic(err)
 			}
-			m.msg = "Entry saved!"
+			m.msg = "Entry saved"
 
 			return m, tea.Batch(cmd, clearSuccessMsgAfter(2*time.Second))
 		default:
@@ -92,25 +92,24 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m WriteModel) View() string {
 	doc := strings.Builder{}
 
-	subtle := lipgloss.NewStyle().Foreground(primaryColor)
 	highlight := lipgloss.NewStyle().Foreground(primaryColor)
-	success := lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")).Padding(1)
-
-	row := lipgloss.JoinHorizontal(lipgloss.Center,
-		subtle.Render("(ctrl+s to save)"),
-		" ",
-		subtle.Render("(ctrl+c to quit)"))
+	helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+	success := lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00"))
+	checkMark := lipgloss.NewStyle().SetString("✓").
+		Foreground(lipgloss.Color("#73F59F")).
+		PaddingRight(1).
+		String()
 
 	var successMsg string
 	if len(m.msg) > 0 {
-		successMsg = success.Render(m.msg)
+		successMsg = checkMark + success.Render(m.msg)
 	}
 
 	column := lipgloss.JoinVertical(lipgloss.Left,
 		highlight.Render(m.date)+"\n",
 		m.textarea.View(),
 		successMsg,
-		row)
+		helpStyle.Render("ctrl+s: save • ctrl+c: quit"))
 
 	doc.WriteString(column)
 
