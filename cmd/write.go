@@ -35,7 +35,7 @@ var writeCmd = &cobra.Command{
 }
 
 func (m WriteModel) Init() tea.Cmd {
-	return m.textarea.Focus()
+	return textarea.Blink
 }
 
 func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -59,12 +59,7 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlS:
 			m.body = m.textarea.Value()
 			date := time.Now().Format("January-02-2006")
-			f, err := os.Create("./" + date + ".md")
-			defer f.Close()
-			if err != nil {
-				panic(err)
-			}
-			_, err = f.WriteString(m.body)
+			err := os.WriteFile("./"+date+".md", []byte(m.body), 0644)
 			if err != nil {
 				panic(err)
 			}
@@ -128,9 +123,22 @@ func init() {
 		ta.SetHeight(15)
 		ta.Focus()
 
+		filename := "./" + time.Now().Format("January-02-2006") + ".md"
+		entry, err := os.ReadFile(filename)
+		if len(entry) > 0 {
+			ta.SetValue(string(entry))
+		}
+
+		// create todays entry if it doesnt exist
+		if err != nil {
+			f, err := os.Create(filename)
+			cobra.CheckErr(err)
+			defer f.Close()
+		}
+
 		m := WriteModel{
 			textarea: ta,
-			body:     "",
+			body:     ta.Value(),
 			date:     time.Now().Format("January 02 2006"),
 		}
 
