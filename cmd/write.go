@@ -85,7 +85,7 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m WriteModel) View() string {
-	doc := strings.Builder{}
+	s := strings.Builder{}
 
 	highlight := lipgloss.NewStyle().Foreground(primaryColor)
 	helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
@@ -106,9 +106,9 @@ func (m WriteModel) View() string {
 		successMsg,
 		helpStyle.Render("ctrl+s: save • ctrl+c: quit"))
 
-	doc.WriteString(column)
+	s.WriteString(column)
 
-	return docStyle.Render(doc.String())
+	return docStyle.Render(s.String())
 }
 
 func init() {

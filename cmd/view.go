@@ -3,12 +3,14 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/filepicker"
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
@@ -16,9 +18,45 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type item string
+
+func (i item) FilterValue() string { return string(i) }
+
+type itemDelegate struct{}
+
+func (d itemDelegate) Height() int                             { return 1 }
+func (d itemDelegate) Spacing() int                            { return 0 }
+func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
+func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	i, ok := listItem.(item)
+	if !ok {
+		return
+	}
+
+	str := fmt.Sprintf("%d. %s", index+1, i)
+
+	fn := itemStyle.Render
+	if index == m.Index() {
+		fn = func(s ...string) string {
+			return selectedItemStyle.Render("> " + strings.Join(s, " "))
+		}
+	}
+
+	fmt.Fprint(w, fn(str))
+}
+
+var (
+	titleStyle        = lipgloss.NewStyle().Padding(0)
+	itemStyle         = lipgloss.NewStyle().PaddingLeft(1)
+	selectedItemStyle = lipgloss.NewStyle().Foreground(primaryColor).PaddingLeft(1)
+	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(1)
+	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(0)
+)
+
 type ViewModel struct {
 	body         string
 	filepicker   filepicker.Model
+	list         list.Model
 	selectedFile string
 	quitting     bool
 	err          error
@@ -38,7 +76,7 @@ func clearErrorAfter(t time.Duration) tea.Cmd {
 }
 
 func (m ViewModel) Init() tea.Cmd {
-	return m.filepicker.Init()
+	return nil
 }
 
 func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -49,12 +87,16 @@ func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		}
+	case tea.WindowSizeMsg:
+		h, v := docStyle.GetFrameSize()
+		m.list.SetSize(msg.Width-h, msg.Height-v)
 	case clearErrorMsg:
 		m.err = nil
 	}
 
 	var cmd tea.Cmd
-	m.filepicker, cmd = m.filepicker.Update(msg)
+	// m.filepicker, cmd = m.filepicker.Update(msg)
+	m.list, cmd = m.list.Update(msg)
 
 	if didSelect, path := m.filepicker.DidSelectFile(msg); didSelect {
 		m.selectedFile = path
@@ -92,11 +134,11 @@ func (m ViewModel) View() string {
 		out, _ := r.Render(m.body)
 		s.WriteString(out)
 	} else {
-		s.WriteString("Pick a entry:")
-		s.WriteString("\n\n" + m.filepicker.View() + "\n")
+		// s.WriteString("\n\n" + m.filepicker.View() + "\n")
+		s.WriteString(m.list.View())
 	}
 
-	return s.String()
+	return docStyle.Render(s.String())
 }
 
 func init() {
@@ -112,11 +154,30 @@ func init() {
 		fp.Styles.Selected.Foreground(primaryColor)
 		fp.Styles.Cursor.Foreground(primaryColor)
 
-		m := ViewModel{
-			filepicker: fp,
+		entries := []list.Item{}
+		c, err := os.ReadDir(path.Dir(ex))
+		cobra.CheckErr(err)
+		for _, entry := range c {
+			if path.Ext(entry.Name()) == ".md" {
+				entries = append(entries, item(entry.Name()))
+			}
 		}
 
-		_, err := tea.NewProgram(&m, tea.WithOutput(os.Stderr)).Run()
+		const defaultWidth = 20
+
+		l := list.New(entries, itemDelegate{}, defaultWidth, 14)
+		l.Title = "Pick a entry:"
+		l.SetShowStatusBar(false)
+		l.Styles.Title = titleStyle
+		l.Styles.PaginationStyle = paginationStyle
+		l.Styles.HelpStyle = helpStyle
+
+		m := ViewModel{
+			filepicker: fp,
+			list:       l,
+		}
+
+		_, err = tea.NewProgram(&m, tea.WithOutput(os.Stderr)).Run()
 		if err != nil {
 			fmt.Println("Error running program:", err)
 			os.Exit(1)

@@ -33,6 +33,6 @@ func init() {
 			glamour.WithStylesFromJSONFile("glamour_theme.json"),
 		)
 		out, _ := r.Render(string(f))
-		fmt.Print(out)
+		fmt.Print(docStyle.Render(out))
 	}
 }

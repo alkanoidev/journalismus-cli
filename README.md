@@ -13,8 +13,9 @@
 - view
   - use list to render md files
     - read all .md from directory
+    - group by months/years
   - filename cmd
   - open other file
 - after init show prompt to run view or write
 - root cmd if init shows prompt to run view or write
-- msg when created entry
+- apply fullscreen to all cmds
