@@ -21,18 +21,21 @@ func init() {
 	viewCmd.AddCommand(viewTodayCmd)
 	viewTodayCmd.Run = func(cmd *cobra.Command, args []string) {
 		lipgloss.SetHasDarkBackground(termenv.HasDarkBackground())
+		helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 
 		path := time.Now().Format("January-02-2006") + ".md"
 		f, err := os.ReadFile(path)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error:", err)
-			os.Exit(1)
+			fmt.Print(helpStyle.Render(" No entry for today detected...\n"))
+			writeCmd.Run(cmd, args)
+
 		}
 
 		r, _ := glamour.NewTermRenderer(
-			glamour.WithStylesFromJSONFile("glamour_theme.json"),
+			glamour.WithStylesFromJSONFile("theme.json"),
 		)
 		out, _ := r.Render(string(f))
+
 		fmt.Print(docStyle.Render(out))
 	}
 }
