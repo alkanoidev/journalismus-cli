@@ -50,6 +50,19 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textarea.Blur()
 			}
 		case tea.KeyCtrlC:
+			if len(strings.TrimSpace(m.body)) == 0 {
+				filename := "./" + time.Now().Format("January-02-2006") + ".md"
+				err := os.Remove(filename)
+				cobra.CheckErr(err)
+			} else {
+				filename := "./" + time.Now().Format("January-02-2006") + ".md"
+				err := os.WriteFile(filename, []byte(m.body), 0644)
+				if err != nil {
+					panic(err)
+				}
+				m.msg = "Entry saved"
+				clearSuccessMsgAfter(2 * time.Second)
+			}
 			return m, tea.Quit
 		case tea.KeyEnter:
 			if !m.textarea.Focused() {
@@ -71,6 +84,7 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd = m.textarea.Focus()
 				cmds = append(cmds, cmd)
 			}
+			m.body = m.textarea.Value()
 		}
 	case error:
 		m.err = msg
@@ -133,7 +147,7 @@ func init() {
 		if err != nil {
 			f, err := os.Create(filename)
 			cobra.CheckErr(err)
-			defer f.Close()
+			f.Close()
 		}
 
 		m := WriteModel{

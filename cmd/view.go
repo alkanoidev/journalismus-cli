@@ -129,7 +129,7 @@ func (m ViewModel) View() string {
 
 	if len(m.body) > 0 {
 		r, _ := glamour.NewTermRenderer(
-			glamour.WithStylesFromJSONFile("glamour_theme.json"),
+			glamour.WithStylesFromJSONFile("theme.json"),
 		)
 		out, _ := r.Render(m.body)
 		s.WriteString(out)
