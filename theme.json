@@ -18,22 +18,22 @@
     },
     "h1": {
         "color": "228",
-        "background_color": "#875fff"
+        "background_color": "#ffc799"
     },
     "h2": {
         "prefix": "## ",
-        "color": "#875fff"
+        "color": "#ffc799"
     },
     "h3": {
-        "color": "#875fff",
+        "color": "#ffc799",
         "prefix": "### "
     },
     "h4": {
-        "color": "#875fff",
+        "color": "#ffc799",
         "prefix": "#### "
     },
     "h5": {
-        "color": "#875fff",
+        "color": "#ffc799",
         "prefix": "##### "
     },
     "h6": {

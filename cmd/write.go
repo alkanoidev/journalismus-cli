@@ -93,14 +93,6 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m WriteModel) View() string {
 	s := strings.Builder{}
 
-	highlight := lipgloss.NewStyle().Foreground(primaryColor)
-	helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-	success := lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00"))
-	checkMark := lipgloss.NewStyle().SetString("✓").
-		Foreground(lipgloss.Color("#73F59F")).
-		PaddingRight(1).
-		String()
-
 	var successMsg string
 	if len(m.msg) > 0 {
 		successMsg = checkMark + success.Render(m.msg)

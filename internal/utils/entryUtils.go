@@ -14,13 +14,21 @@ func WriteEntryToFile(body string) (string, error) {
 	return "Entry saved", err
 }
 
+func ReadFile(path string) ([]byte, error) {
+	f, err := os.ReadFile(path)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return f, nil
+}
+
 func ReadOrCreateEntry() (string, error) {
 	filename := "./" + time.Now().Format("January-02-2006") + ".md"
 	entry, err := os.ReadFile(filename)
 	if err == nil {
 		return string(entry), nil
 	} else {
-		// create todays entry if it doesnt exist
 		f, err := os.Create(filename)
 		f.Close()
 		return "", err

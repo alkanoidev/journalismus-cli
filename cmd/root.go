@@ -11,7 +11,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const primaryColor = lipgloss.Color("#875fff")
+var (
+	highlight = lipgloss.NewStyle().Foreground(primaryColor)
+	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+	success   = lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00"))
+	checkMark = lipgloss.NewStyle().SetString("✓").
+			Foreground(lipgloss.Color("#73F59F")).
+			PaddingRight(1).
+			String()
+)
+
+const primaryColor = lipgloss.Color("#ffc799")
 
 type RootModel struct{}
 
