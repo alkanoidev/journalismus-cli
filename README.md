@@ -20,3 +20,4 @@
 - root cmd if init shows prompt to run view or write
 - apply fullscreen to all cmds
 - fix: journal view today not working on install
+- handle write error

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	entryUtils "journal/internal/utils"
 	"os"
 	"strings"
 	"time"
@@ -51,16 +52,13 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case tea.KeyCtrlC:
 			if len(strings.TrimSpace(m.body)) == 0 {
-				filename := "./" + time.Now().Format("January-02-2006") + ".md"
-				err := os.Remove(filename)
-				cobra.CheckErr(err)
-			} else {
-				filename := "./" + time.Now().Format("January-02-2006") + ".md"
-				err := os.WriteFile(filename, []byte(m.body), 0644)
+				err := entryUtils.DeleteEntry()
 				if err != nil {
-					panic(err)
+					m.err = err
+					os.Exit(1)
 				}
-				m.msg = "Entry saved"
+			} else {
+				m.msg, m.err = entryUtils.WriteEntryToFile(m.body)
 				clearSuccessMsgAfter(2 * time.Second)
 			}
 			return m, tea.Quit
@@ -71,13 +69,7 @@ func (m WriteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case tea.KeyCtrlS:
 			m.body = m.textarea.Value()
-			date := time.Now().Format("January-02-2006")
-			err := os.WriteFile("./"+date+".md", []byte(m.body), 0644)
-			if err != nil {
-				panic(err)
-			}
-			m.msg = "Entry saved"
-
+			m.msg, m.err = entryUtils.WriteEntryToFile(m.body)
 			return m, tea.Batch(cmd, clearSuccessMsgAfter(2*time.Second))
 		default:
 			if !m.textarea.Focused() {
@@ -137,18 +129,9 @@ func init() {
 		ta.SetHeight(15)
 		ta.Focus()
 
-		filename := "./" + time.Now().Format("January-02-2006") + ".md"
-		entry, err := os.ReadFile(filename)
-		if len(entry) > 0 {
-			ta.SetValue(string(entry))
-		}
-
-		// create todays entry if it doesnt exist
-		if err != nil {
-			f, err := os.Create(filename)
-			cobra.CheckErr(err)
-			f.Close()
-		}
+		entry, err := entryUtils.ReadOrCreateEntry()
+		cobra.CheckErr(err)
+		ta.SetValue(entry)
 
 		m := WriteModel{
 			textarea: ta,
