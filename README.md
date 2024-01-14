@@ -17,7 +17,8 @@ https://github.com/charmbracelet/bubbletea/blob/master/examples/list-simple/main
     - read all .md from directory
     - group by months/years
   - filename cmd
-  - open other file
+  - sort entries
+  - filter
 - after init show prompt to run view or write
 - root cmd if init shows prompt to run view or write
 - apply fullscreen to all cmds

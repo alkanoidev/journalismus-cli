@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
@@ -23,27 +24,9 @@ func (i item) FilterValue() string { return string(i) }
 
 type itemDelegate struct{}
 
-func (d itemDelegate) Height() int  { return 1 }
-func (d itemDelegate) Spacing() int { return 0 }
-func (d itemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd {
-	// var title string
-
-	// if i, ok := m.SelectedItem().(item); ok {
-	// 	title = string(i)
-	// } else {
-	// 	return nil
-	// }
-
-	// switch msg := msg.(type) {
-	// case tea.KeyMsg:
-	// 	switch msg.String() {
-	// 	case "enter":
-	// 		return m.NewStatusMessage("You chose " + title)
-	// 	}
-	// }
-
-	return nil
-}
+func (d itemDelegate) Height() int                               { return 1 }
+func (d itemDelegate) Spacing() int                              { return 0 }
+func (d itemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
 func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
 	i, ok := listItem.(item)
 	if !ok {
@@ -68,6 +51,17 @@ var (
 	selectedItemStyle = lipgloss.NewStyle().Foreground(primaryColor).PaddingLeft(1)
 	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(1)
 	listHelpStyle     = list.DefaultStyles().HelpStyle.PaddingLeft(0)
+	paperInfoStyle    = func() lipgloss.Style {
+		b := lipgloss.RoundedBorder()
+		b.Left = "┤"
+		return paperTitleStyle.Copy().BorderStyle(b).BorderForeground(primaryColor)
+	}()
+	paperTitleStyle = func() lipgloss.Style {
+		b := lipgloss.RoundedBorder()
+		b.Right = "├"
+		return lipgloss.NewStyle().BorderStyle(b).Padding(0, 1).BorderForeground(primaryColor)
+	}()
+	paperLineStyle = lipgloss.NewStyle().Foreground(primaryColor).Render
 )
 
 type ViewModel struct {
@@ -76,6 +70,8 @@ type ViewModel struct {
 	selectedFile string
 	quitting     bool
 	err          error
+	entryPicker  bool
+	paper        viewport.Model
 }
 
 var viewCmd = &cobra.Command{
@@ -99,45 +95,62 @@ func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			m.quitting = true
 			return m, tea.Quit
 		case "enter":
-			entry, ok := m.list.SelectedItem().(item)
-			if ok {
-				m.selectedFile = string(entry)
+			if m.entryPicker {
+				entry, ok := m.list.SelectedItem().(item)
+				m.entryPicker = false
+				if ok {
+					m.selectedFile = string(entry)
 
-				body, err := entryUtils.ReadFile(m.selectedFile)
-				if err != nil {
-					fmt.Fprintln(os.Stderr, "Failed opening file: ", err)
-					os.Exit(1)
+					body, err := entryUtils.ReadFile(m.selectedFile)
+					if err != nil {
+						fmt.Fprintln(os.Stderr, "Failed opening file: ", err)
+						os.Exit(1)
+					}
+					m.body = string(body)
+
+					r, _ := glamour.NewTermRenderer(
+						glamour.WithStylesFromJSONFile("theme.json"),
+					)
+					out, _ := r.Render(m.body)
+
+					m.paper.SetContent(string(out))
 				}
-				m.body = string(body)
 			}
+		case "tab":
+			m.entryPicker = !m.entryPicker
 		}
-	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
+	// case tea.WindowSizeMsg:
+	// 	headerHeight := lipgloss.Height(m.headerView())
+	// 	footerHeight := lipgloss.Height(m.footerView())
+	// 	verticalMarginHeight := headerHeight + footerHeight
+
+	// 	if !m.ready {
+	// 		m.paper = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+	// 		m.paper.YPosition = headerHeight
+	// 		m.paper.SetContent(m.bodyRendered)
+	// 		m.ready = true
+	// 		m.paper.YPosition = headerHeight + 1
+	// 	} else {
+	// 		m.paper.Width = msg.Width
+	// 		m.paper.Height = msg.Height - verticalMarginHeight
+	// 	}
+	// 	return m, tea.Batch(cmds...)
 	case clearErrorMsg:
 		m.err = nil
 	}
-
 	var cmd tea.Cmd
-	// m.list, cmd = m.list.Update(msg)
-
-	// if didSelect, path := m.filepicker.DidSelectFile(msg); didSelect {
-	// 	m.selectedFile = path
-
-	// 	f, err := os.ReadFile(m.selectedFile)
-	// 	if err != nil {
-	// 		fmt.Fprintln(os.Stderr, "Error:", err)
-	// 		os.Exit(1)
-	// 	}
-	// 	m.body = string(f)
-	// }
-	m.list, cmd = m.list.Update(msg)
+	if m.entryPicker {
+		m.list, cmd = m.list.Update(msg)
+	} else {
+		m.paper, cmd = m.paper.Update(msg)
+	}
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
@@ -147,18 +160,25 @@ func (m ViewModel) View() string {
 		return ""
 	}
 	s := strings.Builder{}
-
-	if len(m.body) > 0 {
-		r, _ := glamour.NewTermRenderer(
-			glamour.WithStylesFromJSONFile("theme.json"),
-		)
-		out, _ := r.Render(m.body)
-		s.WriteString(out)
-	} else {
+	if m.entryPicker {
 		s.WriteString(m.list.View())
+	} else {
+		s.WriteString("\n\n" + m.headerView() + "\n" + m.paper.View() + m.footerView())
 	}
 
 	return docStyle.Render(s.String())
+}
+
+func (m ViewModel) headerView() string {
+	title := paperTitleStyle.Render(m.selectedFile)
+	line := strings.Repeat("─", max(0, m.paper.Width-lipgloss.Width(title)))
+	return lipgloss.JoinHorizontal(lipgloss.Center, title, paperLineStyle(line))
+}
+
+func (m ViewModel) footerView() string {
+	info := paperInfoStyle.Render(fmt.Sprintf("%3.f%%", m.paper.ScrollPercent()*100))
+	line := strings.Repeat("─", max(0, m.paper.Width-lipgloss.Width(info)))
+	return lipgloss.JoinHorizontal(lipgloss.Center, paperLineStyle(line), info)
 }
 
 func init() {
@@ -176,17 +196,27 @@ func init() {
 			}
 		}
 
-		const defaultWidth = 20
-
-		l := list.New(entries, itemDelegate{}, defaultWidth, 14)
+		l := list.New(entries, itemDelegate{}, 20, 14)
 		l.Title = "Pick a entry:"
 		l.SetShowStatusBar(false)
 		l.Styles.Title = titleStyle
 		l.Styles.PaginationStyle = paginationStyle
 		l.Styles.HelpStyle = listHelpStyle
 
+		const width = 78
+
+		paper := viewport.New(width, 20)
+		paper.Style = lipgloss.NewStyle().
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderTop(false).
+			BorderBottom(false).
+			BorderForeground(lipgloss.Color("62")).
+			PaddingRight(2)
+
 		m := ViewModel{
-			list: l,
+			list:        l,
+			entryPicker: true,
+			paper:       paper,
 		}
 
 		_, err = tea.NewProgram(&m, tea.WithOutput(os.Stderr)).Run()
