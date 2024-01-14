@@ -11,6 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var rootCmd = &cobra.Command{
+	Use: "journal",
+}
+
 var (
 	highlight = lipgloss.NewStyle().Foreground(primaryColor)
 	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
@@ -24,10 +28,6 @@ var (
 const primaryColor = lipgloss.Color("#ffc799")
 
 type RootModel struct{}
-
-var rootCmd = &cobra.Command{
-	Use: "journal",
-}
 
 func Execute() {
 	err := rootCmd.Execute()

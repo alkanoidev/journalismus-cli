@@ -14,6 +14,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var writeCmd = &cobra.Command{
+	Use:   "write",
+	Short: "Write a new entry",
+}
+
 type WriteModel struct {
 	textarea textarea.Model
 	body     string
@@ -28,11 +33,6 @@ func clearSuccessMsgAfter(t time.Duration) tea.Cmd {
 	return tea.Tick(t, func(_ time.Time) tea.Msg {
 		return ClearSuccessMsg{}
 	})
-}
-
-var writeCmd = &cobra.Command{
-	Use:   "write",
-	Short: "Write a new entry",
 }
 
 func (m WriteModel) Init() tea.Cmd {

@@ -17,6 +17,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var viewCmd = &cobra.Command{
+	Use:   "view",
+	Short: "",
+}
+
 type item string
 
 func (i item) FilterValue() string { return string(i) }
@@ -50,17 +55,6 @@ var (
 	selectedItemStyle = lipgloss.NewStyle().Foreground(primaryColor).PaddingLeft(1)
 	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(1)
 	listHelpStyle     = list.DefaultStyles().HelpStyle.PaddingLeft(0)
-	paperInfoStyle    = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Left = "┤"
-		return paperTitleStyle.Copy().BorderStyle(b).BorderForeground(primaryColor)
-	}()
-	paperTitleStyle = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Right = "├"
-		return lipgloss.NewStyle().BorderStyle(b).Padding(0, 1).BorderForeground(primaryColor)
-	}()
-	paperLineStyle = lipgloss.NewStyle().Foreground(primaryColor).Render
 )
 
 type ViewModel struct {
@@ -74,11 +68,6 @@ type ViewModel struct {
 	ready        bool
 }
 
-var viewCmd = &cobra.Command{
-	Use:   "view",
-	Short: "",
-}
-
 func (m ViewModel) Init() tea.Cmd {
 	return nil
 }
@@ -90,10 +79,12 @@ func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEscape, tea.KeyTab:
-			m.entryPicker = !m.entryPicker
+			if !m.entryPicker {
+				m.entryPicker = true
+			}
 			return m, nil
 
-		case tea.KeyCtrlC, tea.KeyCtrlQ:
+		case tea.KeyCtrlC:
 			m.quitting = true
 			return m, tea.Quit
 		case tea.KeyEnter:
@@ -119,20 +110,20 @@ func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
-	case tea.WindowSizeMsg:
-		headerHeight := lipgloss.Height(m.headerView())
-		footerHeight := lipgloss.Height(m.footerView())
-		verticalMarginHeight := headerHeight + footerHeight
+		// case tea.WindowSizeMsg:
+		// 	headerHeight := lipgloss.Height(m.headerView())
+		// 	footerHeight := lipgloss.Height(m.footerView())
+		// 	verticalMarginHeight := headerHeight + footerHeight
 
-		if !m.ready {
-			m.paper = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
-			m.paper.YPosition = headerHeight
-			m.ready = true
-			m.paper.YPosition = headerHeight + 1
-		} else {
-			m.paper.Width = msg.Width
-			m.paper.Height = msg.Height - verticalMarginHeight
-		}
+		// 	if !m.ready {
+		// 		m.paper = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+		// 		m.paper.YPosition = headerHeight
+		// 		m.ready = true
+		// 		m.paper.YPosition = headerHeight + 1
+		// 	} else {
+		// 		m.paper.Width = msg.Width
+		// 		m.paper.Height = msg.Height - verticalMarginHeight
+		// 	}
 	}
 	var cmd tea.Cmd
 	if m.entryPicker {
@@ -152,22 +143,10 @@ func (m ViewModel) View() string {
 	if m.entryPicker {
 		s.WriteString(m.list.View())
 	} else {
-		s.WriteString(m.headerView() + m.paper.View() + m.footerView())
+		s.WriteString(lipgloss.JoinVertical(lipgloss.Left, m.paper.View(), helpStyle.Render("tab: toggle list of entries • ctrl+c: quit")))
 	}
 
 	return s.String()
-}
-
-func (m ViewModel) headerView() string {
-	title := paperTitleStyle.Render(m.selectedFile)
-	line := strings.Repeat("─", max(0, m.paper.Width-lipgloss.Width(title)))
-	return lipgloss.JoinHorizontal(lipgloss.Center, title, paperLineStyle(line))
-}
-
-func (m ViewModel) footerView() string {
-	info := paperInfoStyle.Render(fmt.Sprintf("%3.f%%", m.paper.ScrollPercent()*100))
-	line := strings.Repeat("─", max(0, m.paper.Width-lipgloss.Width(info)))
-	return lipgloss.JoinHorizontal(lipgloss.Center, paperLineStyle(line), info)
 }
 
 func newModel() (*ViewModel, error) {
@@ -195,8 +174,8 @@ func newModel() (*ViewModel, error) {
 
 	paper := viewport.New(78, 20)
 	paper.Style = lipgloss.NewStyle().
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(primaryColor).PaddingRight(2)
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(primaryColor)
 
 	return &ViewModel{
 		list:        l,
