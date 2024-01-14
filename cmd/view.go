@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -72,19 +71,12 @@ type ViewModel struct {
 	err          error
 	entryPicker  bool
 	paper        viewport.Model
+	ready        bool
 }
 
 var viewCmd = &cobra.Command{
 	Use:   "view",
 	Short: "",
-}
-
-type clearErrorMsg struct{}
-
-func clearErrorAfter(t time.Duration) tea.Cmd {
-	return tea.Tick(t, func(_ time.Time) tea.Msg {
-		return clearErrorMsg{}
-	})
 }
 
 func (m ViewModel) Init() tea.Cmd {
@@ -95,13 +87,16 @@ func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
+		switch msg.Type {
+		case tea.KeyEscape, tea.KeyTab:
+			m.entryPicker = !m.entryPicker
+			return m, nil
+
+		case tea.KeyCtrlC, tea.KeyCtrlQ:
 			m.quitting = true
 			return m, tea.Quit
-		case "enter":
+		case tea.KeyEnter:
 			if m.entryPicker {
 				entry, ok := m.list.SelectedItem().(item)
 				m.entryPicker = false
@@ -123,27 +118,21 @@ func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.paper.SetContent(string(out))
 				}
 			}
-		case "tab":
-			m.entryPicker = !m.entryPicker
 		}
-	// case tea.WindowSizeMsg:
-	// 	headerHeight := lipgloss.Height(m.headerView())
-	// 	footerHeight := lipgloss.Height(m.footerView())
-	// 	verticalMarginHeight := headerHeight + footerHeight
+	case tea.WindowSizeMsg:
+		headerHeight := lipgloss.Height(m.headerView())
+		footerHeight := lipgloss.Height(m.footerView())
+		verticalMarginHeight := headerHeight + footerHeight
 
-	// 	if !m.ready {
-	// 		m.paper = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
-	// 		m.paper.YPosition = headerHeight
-	// 		m.paper.SetContent(m.bodyRendered)
-	// 		m.ready = true
-	// 		m.paper.YPosition = headerHeight + 1
-	// 	} else {
-	// 		m.paper.Width = msg.Width
-	// 		m.paper.Height = msg.Height - verticalMarginHeight
-	// 	}
-	// 	return m, tea.Batch(cmds...)
-	case clearErrorMsg:
-		m.err = nil
+		if !m.ready {
+			m.paper = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+			m.paper.YPosition = headerHeight
+			m.ready = true
+			m.paper.YPosition = headerHeight + 1
+		} else {
+			m.paper.Width = msg.Width
+			m.paper.Height = msg.Height - verticalMarginHeight
+		}
 	}
 	var cmd tea.Cmd
 	if m.entryPicker {
@@ -163,10 +152,10 @@ func (m ViewModel) View() string {
 	if m.entryPicker {
 		s.WriteString(m.list.View())
 	} else {
-		s.WriteString("\n\n" + m.headerView() + "\n" + m.paper.View() + m.footerView())
+		s.WriteString(m.headerView() + m.paper.View() + m.footerView())
 	}
 
-	return docStyle.Render(s.String())
+	return s.String()
 }
 
 func (m ViewModel) headerView() string {
@@ -181,49 +170,57 @@ func (m ViewModel) footerView() string {
 	return lipgloss.JoinHorizontal(lipgloss.Center, paperLineStyle(line), info)
 }
 
+func newModel() (*ViewModel, error) {
+	ex, err := os.Executable()
+	if err != nil {
+		return nil, err
+	}
+	entries := []list.Item{}
+	c, err := os.ReadDir(path.Dir(ex))
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range c {
+		if path.Ext(entry.Name()) == ".md" {
+			entries = append(entries, item(entry.Name()))
+		}
+	}
+
+	l := list.New(entries, itemDelegate{}, 20, 14)
+	l.Title = "Pick a entry:"
+	l.SetShowStatusBar(false)
+	l.Styles.Title = titleStyle
+	l.Styles.PaginationStyle = paginationStyle
+	l.Styles.HelpStyle = listHelpStyle
+
+	paper := viewport.New(78, 20)
+	paper.Style = lipgloss.NewStyle().
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(primaryColor).PaddingRight(2)
+
+	return &ViewModel{
+		list:        l,
+		entryPicker: true,
+		paper:       paper,
+	}, nil
+}
+
 func init() {
 	rootCmd.AddCommand(viewCmd)
+
+	m, err := newModel()
+	if err != nil {
+		fmt.Println("Could not initialize Bubble Tea model:", err)
+		os.Exit(1)
+	}
+
 	viewCmd.Run = func(cmd *cobra.Command, args []string) {
 		lipgloss.SetHasDarkBackground(termenv.HasDarkBackground())
 
-		ex, _ := os.Executable()
-		entries := []list.Item{}
-		c, err := os.ReadDir(path.Dir(ex))
-		cobra.CheckErr(err)
-		for _, entry := range c {
-			if path.Ext(entry.Name()) == ".md" {
-				entries = append(entries, item(entry.Name()))
-			}
-		}
-
-		l := list.New(entries, itemDelegate{}, 20, 14)
-		l.Title = "Pick a entry:"
-		l.SetShowStatusBar(false)
-		l.Styles.Title = titleStyle
-		l.Styles.PaginationStyle = paginationStyle
-		l.Styles.HelpStyle = listHelpStyle
-
-		const width = 78
-
-		paper := viewport.New(width, 20)
-		paper.Style = lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderTop(false).
-			BorderBottom(false).
-			BorderForeground(lipgloss.Color("62")).
-			PaddingRight(2)
-
-		m := ViewModel{
-			list:        l,
-			entryPicker: true,
-			paper:       paper,
-		}
-
-		_, err = tea.NewProgram(&m, tea.WithOutput(os.Stderr)).Run()
+		_, err := tea.NewProgram(m, tea.WithOutput(os.Stderr)).Run()
 		if err != nil {
 			fmt.Println("Error running program:", err)
 			os.Exit(1)
 		}
 	}
-
 }

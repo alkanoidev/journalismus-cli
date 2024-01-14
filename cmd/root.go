@@ -60,8 +60,7 @@ var (
 				BorderForeground(primaryColor).
 				Padding(1).
 				Bold(true)
-	docStyle = lipgloss.NewStyle().
-			Padding(1)
+	docStyle = lipgloss.NewStyle().Padding(1)
 )
 
 func (m RootModel) View() string {

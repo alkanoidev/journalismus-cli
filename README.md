@@ -19,6 +19,7 @@ https://github.com/charmbracelet/bubbletea/blob/master/examples/list-simple/main
   - filename cmd
   - sort entries
   - filter
+  - entry struct
 - after init show prompt to run view or write
 - root cmd if init shows prompt to run view or write
 - apply fullscreen to all cmds
