@@ -2,8 +2,6 @@
 > [!NOTE]
 > Capture thoughts effortlessly in the command line.
 
-https://github.com/charmbracelet/bubbletea/blob/master/examples/list-simple/main.go
-
 ### Roadmap:
 - store in markdown
 - custom dir input
